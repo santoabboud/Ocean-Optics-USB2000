@@ -2,12 +2,15 @@
 This is a compilation of info about Ocean Optics USB2000 spectrometers and a guide to flashing them with firmware on the board level.
 
 ## Introduction
-The Ocean Optics USB2000 is a compact crossed Czerny-Turner spectrometer
-with SMA905 fiber optic input and a 10-pin IO (connector is Samtec IPS1-105-01-S-D-RA, avail. from Mouser).
-The IO can be used to trigger spectral captures and to trigger external devices, such as flashlamps, lasers etc.
-The optical design is very similar to the S2000 spectrometer, it's predecessor,
+The Ocean Optics USB2000 is a compact crossed Czerny-Turner type spectrometer  
+with SMA905 fiber optic input and a 10-pin IO   
+(connector is Samtec IPS1-105-01-S-D-RA, avail. from Mouser).  
+The IO can be used to trigger spectral captures and to trigger external devices,  
+such as flashlamps, lasers etc..  
+The optical design is very similar to it's predecessor, the Ocean Optics S2000,  
 and has been used in later models as well. It uses the Sony ILX511 linear CCD image sensor
-and can be found in various conffigurations ranging from Deep UV over vis to NIR.
+and can be found  
+in various configurations ranging from Deep UV over vis to NIR.
 
 Here's a sketch of the optical layout of the USB4000 spectrometer, which is pretty much identical to the USB2000's.  
 Image credit: Fernando Sebastián Chiwo on ResearchGate.
@@ -66,7 +69,7 @@ Once the screws are removed, pull the the lid up by prying from the gap between 
 
 ### Connecting to the EEPROM
 
-First locate the EEPROM, on which the firmware is stored. The model number is 24LC256.  
+First locate the EEPROM, on which the firmware is stored. The model number is 24LC256. The EEPROM communicates via I	<sup>2</sup> C.    
 The location is marked in the pitures below:  
 
 ![20250118_182135](https://github.com/user-attachments/assets/c345c3fb-77dd-4e8d-9fa6-5eef5105bf1d)
@@ -89,7 +92,133 @@ It should look something like this:
 
 Note that in the picture GND is connected to pin 6 of the spectrometer's IO. This is an older picture; you should connect everything directly to the correct IC legs.  
 
+## Flashing the EEPROM
 
+Load the firmware file `usb2000v2510.iic` onto the SD card. Now put the SD card into the Arduino SD shield.
+Use the Arduino to run the following code (courtesy of michpappas):
 
+```
+#include <SPI.h>
+#include <SD.h>
+#include <Wire.h>
 
+#define PROG_FNAME	    "USB200~1.iic"
+#define PROG_VERIFY	    0
+
+#define PIN_SDCARD_CS	    4
+
+#define UART_BAUD	    9600
+
+#define EEPROM_I2C_ADDR	    0x51
+#define EEPROM_BASE	    0
+
+Sd2Card card;
+
+byte eeprom_read(int i2c_addr, unsigned int dev_addr)
+{
+	byte data = 0xff;
+
+	Wire.beginTransmission(i2c_addr);
+	Wire.write((int)(dev_addr >> 8));
+	Wire.write((int)(dev_addr & 0xff));
+	Wire.endTransmission();
+	Wire.requestFrom(i2c_addr, 1);
+
+	if (Wire.available()) 
+		data = Wire.read();
+
+	return data;
+}
+
+int eeprom_write(int i2c_addr, unsigned long dev_addr, byte data)
+{
+	Wire.beginTransmission(i2c_addr);
+	Wire.write((int)(dev_addr >> 8));
+	Wire.write((int)(dev_addr & 0xFF));
+	Wire.write(data);
+	Wire.endTransmission();
+
+	return 0;
+}
+
+int prog_eeprom(const char *fname)
+{
+	char buf[64];
+	uint8_t e_byte;
+	uint8_t f_byte;
+	File f;
+	char c;
+
+	Serial.println("Opening firmware file");
+
+	f = SD.open(fname, FILE_READ);
+	if (!f) {
+		Serial.println("Could not open file");
+		return -1;
+	}
+
+	Serial.print("Will reprogram EEPROM. Continue? [y/N]");
+	while (!Serial.available()) {
+		yield();
+	}
+	c = Serial.read();
+	if (c != 'y') {
+		Serial.println("Aborting");
+		return -1;
+	}
+
+	Serial.println("");
+	Serial.print("Programming EEPROM (");
+	Serial.print(f.size());
+	Serial.print(" bytes)\n");
+
+	for(unsigned long i = 0; i < f.size(); i ++) {
+		f_byte = f.read();
+		eeprom_write(EEPROM_I2C_ADDR, EEPROM_BASE + i, f_byte);
+		delay(10); /* usec */
+#if PROG_VERIFY
+		e_byte = eeprom_read(EEPROM_I2C_ADDR, EEPROM_BASE + i);
+		if (f_byte != e_byte) {
+			sprintf(buf, "Could not verify byte at %08x: 0x%x (should be 0x%x)", i, f_byte, e_byte);
+			Serial.println(buf);
+			return -1;
+		}
+#endif /* PROG_VERIFY */
+	}
+	f.close();
+
+	return 0;
+}
+
+void setup()
+{
+	int rc;
+
+	Wire.begin();
+
+	Serial.begin(UART_BAUD);
+	while (!Serial)
+		; /* wait for serial monitor */
+
+	Serial.println("Initializing SD card");
+
+	if (!SD.begin(PIN_SDCARD_CS)) {
+		Serial.println("Could not initialize SD card");
+		while (1);
+	}
+
+	Serial.println("Programming EEPROM");
+	rc = prog_eeprom(PROG_FNAME);
+	if (rc) {
+		Serial.println("Programming failed");
+		while (1) ;
+	}
+	Serial.println("Programming complete");
+}
+
+void loop()
+{
+	/* stub */
+}
+```
 
