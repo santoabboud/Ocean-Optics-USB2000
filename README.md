@@ -1,6 +1,8 @@
 # Ocean-Optics-USB2000
 This is a compilation of info about Ocean Optics USB2000 spectrometers and a guide to flashing them with firmware on the board level.
 
+### Disclaimer: I am not responsible for any damages caused by using this procedure. You can use it at your own risk.  
+
 ## Introduction
 The Ocean Optics USB2000 is a compact crossed Czerny-Turner type spectrometer  
 with SMA905 fiber optic input and a 10-pin IO   
@@ -28,7 +30,7 @@ I have modified a USB2000 to measure up to 1080nm with still acceptable sensitiv
 for laser building applications.
 
 The USB2000 spectrometer has seen use in many different applications.
-Most times it is used with Ocean Optics' firmware installed and with Ocean Optics Software such a OceanView.
+Most times it is used with Ocean Optics' firmware installed and with Ocean Optics Software such as OceanView.
 Thermo Fisher Scientific however used the USB2000 with custom firmware in their Nanodrop Series
 Microvolume UV-vis Spectrophotometers for Biotech applications (Nanodrop 2000, uses small xenon flashlamp as broadband light source).
 Unfortunately, their firmware disables use with third-party or Ocean Optics software,
@@ -88,14 +90,13 @@ Now use a mini probing grabber to connect to the following pins:
 
 It should look something like this:  
 
-![probing](https://github.com/user-attachments/assets/4b008735-c278-4008-9d42-8c1146c7e73d)
+![probing](https://github.com/user-attachments/assets/eb921588-6b9b-4bfe-9254-a1c86b63da56)
 
-Note that in the picture GND is connected to pin 6 of the spectrometer's IO. This is an older picture; you should connect everything directly to the correct IC legs.  
 
 ## Flashing the EEPROM
 
 Load the firmware file `usb2000v2510.iic` onto the SD card. Now put the SD card into the Arduino SD shield.
-Use the Arduino to run the following code (courtesy of michpappas):
+Use the Arduino to run the following code (courtesy of Michalis Pappas @michpappas):
 
 ```
 #include <SPI.h>
@@ -221,4 +222,23 @@ void loop()
 	/* stub */
 }
 ```
+After this, your USB2000 spectrometer should have been flashed with the correct firmware for it and can be used with Ocean Optics' software.  
+
+Now you can connect the spectrometer to your PC and run the OOI USB Programmer tool by Ocean Optics.  
+It should show up now and even have all the calibration data still on it (although it makes sense to at least verify the calibration after all the years - for a quick and dirty check, checking against the spectral peaks of a fluorescent lamp works. For a more refined calibration, you should use a dedicated Mercury Argon spectral lamp.)    
+
+The calibration procedure is laid out in Appendix A on pp. 35 - 39 of the `Ocean_Optics_USB2000_Operating_Instructions_Manual.pdf`, which can be found in this repository.  
+
+### Unlock Codes
+To unlock all features of Ocean Optics' softwares, there are unlock codes.   
+
+***!!!  These should be used carefully, as they can modify devices in non-reversible ways.  !!!***  
+
+For the OOI USB Programmer the unlock code is "UNLOCKALL".  
+For OceanView the unlock code is "oceanfactory".  
+
+With these unlock codes, you can flash the calibration coefficients you calculated to the spectrometer.  
+
+Good luck and have fun!
+
 
