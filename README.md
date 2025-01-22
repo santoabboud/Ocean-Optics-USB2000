@@ -1,4 +1,4 @@
-# Ocean-Optics-USB2000
+# Ocean Optics USB2000 Firmware update
 This is a compilation of info about Ocean Optics USB2000 spectrometers and a guide to flashing them with firmware on the board level.
 
 ### Disclaimer: I am not responsible for any damages caused by using this procedure. You can use it at your own risk.  
