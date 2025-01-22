@@ -96,7 +96,7 @@ It should look something like this:
 ## Flashing the EEPROM
 
 Load the firmware file `usb2000v2510.iic` onto the SD card. Now put the SD card into the Arduino SD shield.
-Use the Arduino to run the following code (courtesy of Michalis Pappas @michpappas):
+Use the Arduino to run the following code:
 
 ```
 #include <SPI.h>
